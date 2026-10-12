@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.emp.admin.mapper.OperationLogMapper">
+
+    <!--
+        操作日志分页查询
+        1. 关联用户表拿操作人姓名（注意：这里不限制 u.deleted，账号删了姓名也要能查出来）
+        2. userIds 有值时只查这些账号的日志 —— 部门负责人看本部门成员的操作记录就是这么限制的
+        3. 日期区间：开始日期用 >=，结束日期用 < 次日，当天的记录也能查到
+    -->
+    <select id="selectLogPage" resultType="com.emp.admin.vo.OperationLogVO">
+        select l.id, l.user_id, l.username, l.module, l.operation, l.status, l.error_msg, l.create_time,
+               u.real_name as real_name
+        from sys_operation_log l
+        left join sys_user u on u.id = l.user_id
+        <where>
+            l.deleted = 0
+            <if test="query.username != null and query.username != ''">
+                and l.username like concat('%', #{query.username}, '%')
+            </if>
+            <if test="query.module != null and query.module != ''">
+                and l.module = #{query.module}
+            </if>
+            <if test="query.userIds != null and query.userIds.size() > 0">
+                and l.user_id in
+                <foreach collection="query.userIds" item="uid" open="(" separator="," close=")">
+                    #{uid}
+                </foreach>
+            </if>
+            <if test="query.startDate != null">
+                and l.create_time &gt;= #{query.startDate}
+            </if>
+            <if test="query.endDate != null">
+                and l.create_time &lt; date_add(#{query.endDate}, interval 1 day)
+            </if>
+        </where>
+        order by l.id desc
+    </select>
+
+</mapper>

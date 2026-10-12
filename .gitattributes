@@ -1,0 +1,4 @@
+# 换行符统一：仓库内文本文件统一按 LF 存储，Windows 脚本保持 CRLF
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf

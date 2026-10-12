@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.emp.admin.mapper.LeaveMapper">
+
+    <!--
+        请假单分页查询
+        1. 关联员工表拿到申请人的姓名、工号，再关联部门表拿部门名称
+        2. 关联用户表拿到审批人姓名（审批人是系统用户，不是员工）
+        3. employeeId 有值时只查某个人的请假单（"我的请假"就是这么限制的）
+    -->
+    <select id="selectLeavePage" resultType="com.emp.admin.vo.LeaveVO">
+        select l.id, l.employee_id, l.leave_type, l.start_date, l.end_date, l.days, l.reason, l.status,
+               l.approve_user_id, l.approve_time, l.approve_remark, l.create_time,
+               e.name as employee_name, e.emp_no, d.name as dept_name,
+               u.real_name as approve_user_name
+        from sys_leave l
+        left join sys_employee e on e.id = l.employee_id and e.deleted = 0
+        left join sys_department d on d.id = e.dept_id and d.deleted = 0
+        left join sys_user u on u.id = l.approve_user_id and u.deleted = 0
+        <where>
+            l.deleted = 0
+            <if test="query.employeeId != null">
+                and l.employee_id = #{query.employeeId}
+            </if>
+            <!-- 部门负责人审批时，只查本部门员工的请假单（员工 id 集合由后端塞进来） -->
+            <if test="query.employeeIds != null and query.employeeIds.size() > 0">
+                and l.employee_id in
+                <foreach collection="query.employeeIds" item="empId" open="(" separator="," close=")">
+                    #{empId}
+                </foreach>
+            </if>
+            <if test="query.status != null">
+                and l.status = #{query.status}
+            </if>
+            <!-- 审批列表排除员工已撤销的单子（hideCancelled 由后端强制设置为 true） -->
+            <if test="query.hideCancelled != null and query.hideCancelled">
+                and l.status &lt;&gt; 3
+            </if>
+            <if test="query.employeeName != null and query.employeeName != ''">
+                and e.name like concat('%', #{query.employeeName}, '%')
+            </if>
+        </where>
+        order by l.id desc
+    </select>
+
+</mapper>

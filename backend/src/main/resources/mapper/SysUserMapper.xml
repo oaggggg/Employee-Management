@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.emp.admin.mapper.SysUserMapper">
+
+    <!--
+        账号分页查询：账号信息 + 关联的员工信息
+        sys_user.employee_id 关联员工表，员工再关联部门表
+    -->
+    <select id="selectUserPage" resultType="com.emp.admin.vo.UserVO">
+        select u.id, u.username, u.real_name, u.role, u.employee_id, u.status, u.create_time,
+               e.name as employee_name, e.emp_no, d.name as dept_name
+        from sys_user u
+        left join sys_employee e on e.id = u.employee_id and e.deleted = 0
+        left join sys_department d on d.id = e.dept_id and d.deleted = 0
+        <where>
+            u.deleted = 0
+            <if test="query.username != null and query.username != ''">
+                and u.username like concat('%', #{query.username}, '%')
+            </if>
+            <if test="query.role != null and query.role != ''">
+                and u.role = #{query.role}
+            </if>
+            <!-- 部门负责人只能看本部门员工的账号（员工 id 集合由后端塞进来） -->
+            <if test="query.employeeIds != null and query.employeeIds.size() > 0">
+                and u.employee_id in
+                <foreach collection="query.employeeIds" item="eid" open="(" separator="," close=")">
+                    #{eid}
+                </foreach>
+            </if>
+        </where>
+        order by u.id asc
+    </select>
+
+</mapper>

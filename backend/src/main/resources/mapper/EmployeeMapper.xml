@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.emp.admin.mapper.EmployeeMapper">
+
+    <!--
+        员工分页查询
+        1. left join 部门表拿到部门名称（员工表里只存 dept_id）
+        2. <where> + <if> 是 MyBatis 的动态 SQL，条件不传就不拼这一段
+        3. #{query.name} 是预编译占位符（?），能防止 SQL 注入；
+           不要用 ${} 直接拼接字符串
+        4. 分页的 LIMIT 不用自己写，分页插件会自动加上
+    -->
+    <select id="selectEmployeePage" resultType="com.emp.admin.vo.EmployeeVO">
+        select e.id, e.emp_no, e.name, e.gender, e.age, e.phone, e.email,
+               e.dept_id, e.position, e.salary, e.hire_date, e.status, e.create_time,
+               d.name as dept_name,
+               u.username as account_username
+        from sys_employee e
+        left join sys_department d on d.id = e.dept_id and d.deleted = 0
+        left join sys_user u on u.employee_id = e.id and u.deleted = 0
+        <where>
+            e.deleted = 0
+            <if test="query.name != null and query.name != ''">
+                and e.name like concat('%', #{query.name}, '%')
+            </if>
+            <if test="query.deptId != null">
+                and e.dept_id = #{query.deptId}
+            </if>
+            <if test="query.status != null">
+                and e.status = #{query.status}
+            </if>
+        </where>
+        order by e.id desc
+    </select>
+
+</mapper>

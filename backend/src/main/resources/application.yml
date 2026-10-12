@@ -1,0 +1,62 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: emp-admin
+
+  # ==================== 数据源（MySQL 8.0） ====================
+  # 账号密码支持用环境变量覆盖，不传则使用默认值：${环境变量名:默认值}
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/emp_manage?useUnicode=true&characterEncoding=utf8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
+    username: ${MYSQL_USERNAME:root}
+    password: ${MYSQL_PASSWORD:123456}
+
+  # ==================== Redis（存登录 token） ====================
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      database: 0
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+
+  # 返回给前端的时间格式化
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+
+# ==================== MyBatis-Plus ====================
+mybatis-plus:
+  # 手写 SQL 的 XML 文件位置
+  mapper-locations: classpath*:mapper/*.xml
+  type-aliases-package: com.emp.admin.entity
+  configuration:
+    # 数据库下划线字段 -> Java 驼峰属性，例如 dept_id -> deptId
+    map-underscore-to-camel-case: true
+    # 控制台打印执行的 SQL，方便调试（生产环境应关闭）
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+      # 逻辑删除：删除时不是真删，而是把 deleted 字段改为 1
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# ==================== 项目自定义配置 ====================
+emp:
+  jwt:
+    # HS256 要求密钥长度至少 32 字节
+    secret: emp-admin-jwt-secret-key-please-change-in-production-2024
+    # token 有效期（分钟），同时也是 Redis 里登录态的过期时间
+    expire-minutes: 30
+  login:
+    # 连续密码错误达到 5 次，锁定 10 分钟
+    max-fail-count: 5
+    lock-minutes: 10
